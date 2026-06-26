@@ -1,5 +1,5 @@
 [project]
-name = "do-utilities"
+name = "do_utilities"
 version = "1.0.0"
 description = "A package for all data ops utiliy functionalities"
 authors = [
