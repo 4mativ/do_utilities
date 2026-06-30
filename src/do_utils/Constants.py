@@ -5,14 +5,9 @@ from oauth2client.service_account import ServiceAccountCredentials
 import gspread
 from copy import deepcopy
 from dotenv import dotenv_values
-
-
 from pandas import read_csv, DataFrame
 
 # A utility file that other scripts may import and use its common variables
-
-# Set the current working path to this script's location
-os.chdir(os.path.dirname(__file__))
 
 shared_4mativ_drive = "G:/Shared drives/4MATIV General"
 
@@ -22,80 +17,18 @@ data_ops_drive = "G:/Shared drives/Data_Ops"
 
 active_diagnostics_folder = diagnostics_drive + "/0. Consulting - Ongoing"
 
-# Read in the provided files and store them as dataframes
-df_standardizations = read_csv(data_ops_drive + "/Databases/Standardization.csv")
-
 billing_doc_id = "12NvTg2NfkuvnT-bM7lO0eTu4WW3BWA7ul0t0y7YvX7E"
 
-# The path to the github repository that this repo is in, used to reference other repo's files in
-# scripts
-github_file_path = str(os.path.dirname(__file__))[: str(os.path.dirname(__file__)).find("GitHub") + 7]
-
-creds = dotenv_values(github_file_path + ".env")
-
-for cur in ["google-drive", "postgres", "qb", "gmail-personal", "dw", "twilio"]:
-    creds[cur] = [[x.replace(f"{cur.upper()}-", ""), creds[x]] for x in creds if f"{cur.upper()}" in x]
-
-    creds[cur] = dict([(str(x[0]).lower(), x[1]) for x in creds[cur]])
-
-for cur in ["staging", "prod"]:
-    creds[f"dw-{cur}"] = [
-        [x.replace(f"{cur}-", ""), creds["dw"][x]] for x in creds["dw"] if f"{cur}" in x and "new" not in x
-    ]
-    creds[f"dw-{cur}"] = dict([(str(x[0]).lower(), x[1]) for x in creds[f"dw-{cur}"]])
-
-creds["dw"] = {
-    "staging": creds["dw-staging"],
-    "prod": creds["dw-prod"],
-    "new": deepcopy(creds["dw-prod"]),
-}
-
-creds["dw"]["new"]["bucket"] = creds["DW-PROD-NEW-BUCKET"]
-
-
-scope_app = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-cred = ServiceAccountCredentials.from_json_keyfile_dict(creds["google-drive"], scope_app)
-client = gspread.authorize(cred)
-billing_file = client.open_by_key(billing_doc_id)
-
-billing_sheets = billing_file.worksheets()
-
-billing_dbs = {}
-
-for cur_sheet in billing_sheets:
-
-    name = cur_sheet.title
-
-    # Read in the filter as a df
-    df = DataFrame(cur_sheet.get_all_values())
-
-    # Make the first row values the column headers, then remove that row
-    df.columns = df.iloc[0]
-
-    df = df[1:]
-
-    if "Archive Date" in df.columns:
-        df["Archive Date"] = df["Archive Date"].astype(str)
-        df = df[df["Archive Date"] == ""]
-        df.reset_index(drop=True, inplace=True)
-
-    billing_dbs[name] = df
-
-
-# f_year = 2024
+# f_year ~= 2024
 f_year = datetime.now().year + (
     1 if datetime.now().month > 7 or (datetime.now().month > 6 and datetime.now().day > 25) else 0
 )
 
-# fiscal_year = FY24
+# fiscal_year ~= FY24
 fiscal_year = f"FY{str(f_year)[2:]}"
 
-# School Year SY23-24
+# School Year ~= SY23-24
 school_year = f"SY{str(f_year - 1)[2:]}-{str(f_year)[2:]}"
-
-
-# Save the file path to the files in the InvoicingDB repo
-invoicing_db_path = github_file_path + "Automation-Scripts/Invoicing/InvoicingDBs/"
 
 # The current pricing scheme for variable price vendors: cost per picked up student, cost per
 # mile, minimum trip cost, cost for a student not showing up
@@ -337,3 +270,66 @@ data_template_columns = [
     "Contact 4: Opt-in to Hotline Communications?",
     "Contact 4: Preferred Language",
 ]
+
+github_file_path = ""
+
+creds = {}
+
+# billing_dbs = {}
+
+invoicing_db_path = ""
+
+df_standardizations = DataFrame()
+
+
+def initializeVariables(filepath = os.getcwd()):
+    global github_file_path, creds, billing_dbs, invoicing_db_path, df_standardizations
+
+    # The path to the github repository that this repo is in, used to reference other repo's files in
+    # scripts
+    github_file_path = str(filepath)[: str(filepath).find("GitHub") + 7]
+    creds = dotenv_values(github_file_path + ".env")
+    for cur in ["google-drive", "postgres", "qb", "gmail-personal", "dw", "twilio"]:
+        creds[cur] = [[x.replace(f"{cur.upper()}-", ""), creds[x]] for x in creds if f"{cur.upper()}" in x]
+
+        creds[cur] = dict([(str(x[0]).lower(), x[1]) for x in creds[cur]])
+    for cur in ["staging", "prod"]:
+        creds[f"dw-{cur}"] = [
+            [x.replace(f"{cur}-", ""), creds["dw"][x]] for x in creds["dw"] if f"{cur}" in x and "new" not in x
+        ]
+        creds[f"dw-{cur}"] = dict([(str(x[0]).lower(), x[1]) for x in creds[f"dw-{cur}"]])
+    creds["dw"] = {
+        "staging": creds["dw-staging"],
+        "prod": creds["dw-prod"],
+        "new": deepcopy(creds["dw-prod"]),
+    }
+    creds["dw"]["new"]["bucket"] = creds["DW-PROD-NEW-BUCKET"]
+    # scope_app = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+    # cred = ServiceAccountCredentials.from_json_keyfile_dict(creds["google-drive"], scope_app)
+    # client = gspread.authorize(cred)
+    # billing_file = client.open_by_key(billing_doc_id)
+    # billing_sheets = billing_file.worksheets()
+    # for cur_sheet in billing_sheets:
+    #     name = cur_sheet.title
+    #     # Read in the filter as a df
+    #     df = DataFrame(cur_sheet.get_all_values())
+    #     # Make the first row values the column headers, then remove that row
+    #     df.columns = df.iloc[0]
+    #     df = df[1:]
+    #     if "Archive Date" in df.columns:
+    #         df["Archive Date"] = df["Archive Date"].astype(str)
+    #         df = df[df["Archive Date"] == ""]
+    #         df.reset_index(drop=True, inplace=True)
+    #     billing_dbs[name] = df
+    # Save the file path to the files in the InvoicingDB repo
+    invoicing_db_path = github_file_path + "Automation-Scripts/Invoicing/InvoicingDBs/"
+    df_standardizations = read_csv(data_ops_drive + "/Databases/Standardization.csv")
+
+def getCred(cred_name):
+    if cred_name in creds.keys():
+        return creds[cred_name]
+    print(f"There were no credentials found for {cred_name}")
+
+
+def getStandards():
+    return df_standardizations
