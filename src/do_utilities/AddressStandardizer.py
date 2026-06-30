@@ -3,7 +3,7 @@ from string import capwords
 
 from usaddress import tag
 
-from do_utilities.Constants import getStandards
+from do_utilities.Constants import getStandards, initializeVariables
 
 standard = getStandards()
 
@@ -228,6 +228,7 @@ def convertAddress(address_string, street_only=False):
     global standard
     
     if standard.empty:
+        initializeVariables()
         standard = getStandards()
         if standard.empty:
             print(f"Error: Common has not been initialized, can't standardize addresses")
