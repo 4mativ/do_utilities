@@ -26,12 +26,9 @@ from rapidfuzz import process, fuzz
 
 # from Geocoding.GoogleApi import GetRoutedDistance, EquivalentAddresses
 from do_utilities.Constants import getStandards, getCred, data_ops_drive, initializeVariables
-# from AddressStandardizer import convertAddress
+from do_utilities.AddressStandardizer import convertAddress
 
 options.mode.chained_assignment = None
-
-os.chdir(os.path.dirname(__file__))
-
 
 
 # Save the standardization df into a local variable
@@ -238,6 +235,9 @@ def initialize(filepath = os.getcwd()):
             "Pod",
         ]
     ]
+    
+    df_toms_schools["Street"] = [convertAddress(x, True) for x in df_toms_schools["Street"]]
+    
     df_toms_schools = df_toms_schools[df_toms_schools["Lat"] == df_toms_schools["Lat"]]
     df_toms_schools = df_toms_schools.reset_index(drop=True)
 
@@ -1527,10 +1527,10 @@ def standardizeRouteName(route_name):
 
     return "_".join(arr)
 
+
 def getCreds(cred_name):
     return getCred(cred_name)
 
-# df_toms_schools["Street"] = [convertAddress(x, True) for x in df_toms_schools["Street"]]
-
 if __name__ == "__main__":
-    generateRequirementsFile()
+    print()
+    # generateRequirementsFile()

@@ -3,15 +3,14 @@ from string import capwords
 
 from usaddress import tag
 
-from Constants import df_standardizations
+from do_utilities.Constants import getStandards
 
-standard = df_standardizations
+standard = getStandards()
 
-
-os.chdir(os.path.dirname(__file__))
 
 # Function for applying address standards such as North Street --> N St
 def standardization(text):
+    
     # Convert text to lowercase to match entries
     final = text.lower().replace(".", "")
 
@@ -226,28 +225,19 @@ def getAddressComponent(address_string, component):
 
 # Convert the given address string to an orderedDict for analysis and further work
 def convertAddress(address_string, street_only=False):
+    global standard
+    
+    if standard.empty:
+        standard = getStandards()
+        if standard.empty:
+            print(f"Error: Common has not been initialized, can't standardize addresses")
+            return ""
+        
     # NAN check
     if address_string != address_string or address_string is None:
         return ""
 
     address_string = address_string.replace("  ", " ")
-
-    # # The address parsing library we're using can't handle 1/2 streets, so replace them with an
-    # equivalent it can understand
-    # try:
-    #     address_string = address_string.replace(" 1/2", ".5")
-    # except:
-    #     print("Failed to attempt to deal with address ", address_string)
-    #     print(format_exc())
-    #     return address_string.title()
-
-    # If the given address appears to be an intersection
-    # if "&" in address_string:
-    # 	temp = address_string.split("&")
-    # 	while len(temp) > 2:
-    # 		# If given address is the intersection of more than two streets, remove all but 2
-    # 		temp.pop(1)
-    # 	address_string = "&".join(temp)
 
     address_string = address_string.title()
 
@@ -268,6 +258,7 @@ def convertAddress(address_string, street_only=False):
         # 3rd party library converts given address into an ordered dict of expected address
         # elements
         output = tag(address_string)
+        # "Forece the '&' char to mean intersection
         if "&" in address_string and output[1] != "Intersection":
             raise Exception
         return processAddress(output[0], output[1], street_only)
