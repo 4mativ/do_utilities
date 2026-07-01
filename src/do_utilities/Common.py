@@ -1184,7 +1184,7 @@ def fuzzyMatchSchool(given_name, cutoff=90):
     return given_name
 
 
-
+initialize()
 
 if __name__ == "__main__":
     print()
